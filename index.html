@@ -386,13 +386,16 @@ function buildReportText(){
   return lines.join('\n');
 }
 
+let lastReportText = '';
+
 function showResults(){
   const t = computeTotals();
   document.getElementById('resWithClient').innerHTML = t.withClient + '<span class="pct">' + t.pctWithClient + '%</span>';
   document.getElementById('resWithoutClient').innerHTML = t.withoutClient + '<span class="pct">' + t.pctWithoutClient + '%</span>';
   document.getElementById('resProcess').innerHTML = t.onProcess + '<span class="pct">' + t.pctOnProcess + '%</span>';
   document.getElementById('resultsBlock').style.display = 'block';
-  document.getElementById('reportText').value = buildReportText();
+  lastReportText = buildReportText();
+  document.getElementById('reportText').value = lastReportText;
   document.getElementById('resultsBlock').scrollIntoView({ behavior:'smooth' });
 }
 
@@ -402,7 +405,7 @@ function toggleReportText(){
 }
 
 function shareReport(){
-  const text = buildReportText();
+  const text = lastReportText || buildReportText();
   if (navigator.share){
     navigator.share({ text: text }).catch(()=>{});
   } else {
