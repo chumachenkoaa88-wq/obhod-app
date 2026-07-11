@@ -93,6 +93,7 @@
     margin-bottom:10px;
   }
   .dept-name:focus{ outline:none; border-color:var(--accent); }
+  .dept-name[readonly]{ cursor:default; color:var(--navy); }
 
   .metric-row{
     display:flex;
@@ -306,7 +307,7 @@ function renderDepts(){
     const nameInput = document.createElement('input');
     nameInput.className = 'dept-name';
     nameInput.value = dept.name;
-    nameInput.oninput = (e)=>{ departments[idx].name = e.target.value; };
+    nameInput.readOnly = true;
     card.appendChild(nameInput);
 
     METRICS.forEach(m=>{
@@ -411,6 +412,15 @@ function shareReport(){
   }
 }
 
+function getUnfilledDepartments(){
+  return departments.filter(d => (d.withClient + d.withoutClient + d.onProcess) === 0);
+}
+
+function resetAll(){
+  departments.forEach(d => { d.withClient = 0; d.withoutClient = 0; d.onProcess = 0; });
+  renderDepts();
+}
+
 function saveObhod(){
   const status = document.getElementById('saveStatus');
   const btn = document.getElementById('saveBtn');
@@ -418,6 +428,14 @@ function saveObhod(){
   if (WEBHOOK_URL.indexOf('ВСТАВЬТЕ') !== -1){
     status.textContent = 'Не задан WEBHOOK_URL в коде страницы';
     status.className = 'err';
+    return;
+  }
+
+  const unfilled = getUnfilledDepartments();
+  if (unfilled.length > 0){
+    status.textContent = 'Не заполнено: ' + unfilled.map(d => d.name).join(', ');
+    status.className = 'err';
+    document.getElementById('card-' + departments.indexOf(unfilled[0])).scrollIntoView({ behavior:'smooth', block:'center' });
     return;
   }
 
@@ -444,6 +462,7 @@ function saveObhod(){
     status.className = 'ok';
     btn.disabled = false;
     showResults();
+    resetAll();
   }, 900);
 }
 
