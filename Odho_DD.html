@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Обход">
+<title>Обход дежурного директора</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F5F7;
+    --card:#FFFFFF;
+    --ink:#1B2430;
+    --ink-soft:#6B7280;
+    --navy:#1E293B;
+    --accent:#2563EB;
+    --amber:#D97706;
+    --green:#16A34A;
+    --red:#DC2626;
+    --line:#E5E7EB;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Manrope', system-ui, sans-serif;
+    padding-bottom:40px;
+  }
+  header{
+    background:var(--navy);
+    color:#fff;
+    padding:22px 20px 20px;
+    border-radius:0 0 18px 18px;
+    position:sticky;
+    top:0;
+    z-index:10;
+  }
+  header h1{
+    margin:0 0 4px;
+    font-size:19px;
+    font-weight:800;
+    letter-spacing:-0.2px;
+  }
+  header .date-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:8px;
+  }
+  header .date-row input[type="date"]{
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.25);
+    color:#fff;
+    border-radius:8px;
+    padding:6px 10px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+  }
+  header .progress{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    opacity:0.75;
+    margin-left:auto;
+  }
+
+  main{
+    max-width:520px;
+    margin:0 auto;
+    padding:16px;
+  }
+
+  .dept-card{
+    background:var(--card);
+    border-radius:14px;
+    padding:14px 16px 16px;
+    margin-bottom:12px;
+    box-shadow:0 1px 2px rgba(0,0,0,0.04);
+    border:1px solid var(--line);
+  }
+  .dept-card.filled{ border-color:var(--green); }
+  .dept-name{
+    width:100%;
+    border:none;
+    background:transparent;
+    font-size:15px;
+    font-weight:700;
+    color:var(--ink);
+    padding:2px 0 8px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:10px;
+  }
+  .dept-name:focus{ outline:none; border-color:var(--accent); }
+
+  .metric-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:6px 0;
+  }
+  .metric-label{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:0;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .stepper button{
+    width:32px;
+    height:32px;
+    border:none;
+    background:#F3F4F6;
+    color:var(--navy);
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .stepper button:active{ background:#E5E7EB; }
+  .stepper .val{
+    width:34px;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:15px;
+    font-weight:600;
+  }
+
+  .save-bar{
+    position:sticky;
+    bottom:0;
+    background:linear-gradient(to top, var(--bg) 60%, transparent);
+    padding-top:20px;
+    margin-top:6px;
+  }
+  #saveBtn{
+    width:100%;
+    padding:15px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    font-family:'Manrope', sans-serif;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  #saveBtn:disabled{ opacity:0.6; }
+  #saveStatus{
+    text-align:center;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:8px;
+    font-family:'IBM Plex Mono', monospace;
+    min-height:16px;
+  }
+  #saveStatus.ok{ color:var(--green); }
+  #saveStatus.err{ color:var(--red); }
+
+  .results{
+    display:none;
+    background:var(--card);
+    border-radius:14px;
+    padding:18px;
+    margin-top:16px;
+    border:1px solid var(--line);
+  }
+  .results h2{
+    margin:0 0 14px;
+    font-size:15px;
+    font-weight:800;
+  }
+  .result-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 0;
+    border-bottom:1px dashed var(--line);
+  }
+  .result-row:last-child{ border-bottom:none; }
+  .result-label{ font-size:13.5px; font-weight:600; color:var(--ink-soft); }
+  .result-value{ font-family:'IBM Plex Mono', monospace; font-size:16px; font-weight:700; }
+  .result-value .pct{ color:var(--accent); margin-left:6px; }
+
+  .report-actions{
+    display:flex;
+    gap:10px;
+    margin-top:16px;
+  }
+  .report-actions button{
+    flex:1;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:#F9FAFB;
+    color:var(--navy);
+    font-family:'Manrope', sans-serif;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .report-actions button.primary{
+    background:var(--navy);
+    color:#fff;
+    border-color:var(--navy);
+  }
+
+  #reportText{
+    display:none;
+    width:100%;
+    margin-top:12px;
+    min-height:180px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:#F9FAFB;
+    color:var(--ink);
+    white-space:pre;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Обход дежурного директора</h1>
+  <div class="date-row">
+    <input type="date" id="obhodDate">
+    <span class="progress" id="progress">0 / 15 заполнено</span>
+  </div>
+</header>
+
+<main>
+  <div id="deptList"></div>
+
+  <div class="save-bar">
+    <button id="saveBtn" onclick="saveObhod()">Сохранить обход</button>
+    <div id="saveStatus"></div>
+  </div>
+
+  <div class="results" id="resultsBlock">
+    <h2>Результат обхода</h2>
+    <div class="result-row">
+      <span class="result-label">С клиентом</span>
+      <span class="result-value" id="resWithClient">—</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Без клиента на посту</span>
+      <span class="result-value" id="resWithoutClient">—</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">На процессах</span>
+      <span class="result-value" id="resProcess">—</span>
+    </div>
+
+    <div class="report-actions">
+      <button class="primary" onclick="shareReport()">Отправить в чат</button>
+      <button onclick="toggleReportText()">Показать текст</button>
+    </div>
+    <textarea id="reportText" readonly></textarea>
+  </div>
+</main>
+
+<iframe name="hiddenTarget" id="hiddenTarget" style="display:none;"></iframe>
+<form id="hiddenForm" method="POST" target="hiddenTarget" style="display:none;">
+  <input type="hidden" name="payload" id="f_payload">
+</form>
+
+<script>
+// ⚠️ Вставьте сюда URL вашего Apps Script веб-приложения (обход)
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyblQ5--0c_U5cUGsSWwg1EOzY1wyto1V7zXw5K7oD1NcFHXrp8kTFmvP5eBkO2Tc0r5g/exec';
+
+const DEPT_COUNT = 15;
+const DEPT_ORDER = [12, 13, 15, 5, 6, 11, 10, 7, 14, 2, 8, 3, 1, 4, 9];
+const METRICS = [
+  { key: 'withClient', label: 'С клиентом' },
+  { key: 'withoutClient', label: 'Без клиента на посту' },
+  { key: 'onProcess', label: 'На процессах' }
+];
+
+let departments = [];
+DEPT_ORDER.forEach(n => {
+  departments.push({ name: 'Отдел ' + n, withClient: 0, withoutClient: 0, onProcess: 0 });
+});
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function renderDepts(){
+  const list = document.getElementById('deptList');
+  list.innerHTML = '';
+  departments.forEach((dept, idx)=>{
+    const card = document.createElement('div');
+    card.className = 'dept-card';
+    card.id = 'card-' + idx;
+
+    const nameInput = document.createElement('input');
+    nameInput.className = 'dept-name';
+    nameInput.value = dept.name;
+    nameInput.oninput = (e)=>{ departments[idx].name = e.target.value; };
+    card.appendChild(nameInput);
+
+    METRICS.forEach(m=>{
+      const row = document.createElement('div');
+      row.className = 'metric-row';
+      row.innerHTML = `
+        <span class="metric-label">${m.label}</span>
+        <span class="stepper">
+          <button type="button" onclick="changeVal(${idx}, '${m.key}', -1)">−</button>
+          <span class="val" id="val-${idx}-${m.key}">${dept[m.key]}</span>
+          <button type="button" onclick="changeVal(${idx}, '${m.key}', 1)">+</button>
+        </span>
+      `;
+      card.appendChild(row);
+    });
+
+    list.appendChild(card);
+  });
+  updateProgress();
+}
+
+function changeVal(idx, key, delta){
+  let v = departments[idx][key] + delta;
+  if (v < 0) v = 0;
+  if (v > 10) v = 10;
+  departments[idx][key] = v;
+  document.getElementById('val-' + idx + '-' + key).textContent = v;
+  updateProgress();
+}
+
+function updateProgress(){
+  let filled = 0;
+  departments.forEach((d, idx)=>{
+    const total = d.withClient + d.withoutClient + d.onProcess;
+    document.getElementById('card-' + idx).classList.toggle('filled', total > 0);
+    if (total > 0) filled++;
+  });
+  document.getElementById('progress').textContent = filled + ' / ' + DEPT_COUNT + ' заполнено';
+}
+
+function computeTotals(){
+  let withClient = 0, withoutClient = 0, onProcess = 0;
+  departments.forEach(d=>{
+    withClient += d.withClient;
+    withoutClient += d.withoutClient;
+    onProcess += d.onProcess;
+  });
+  const total = withClient + withoutClient + onProcess;
+  const pct = n => total > 0 ? Math.round(n / total * 1000) / 10 : 0;
+  return {
+    withClient, withoutClient, onProcess, total,
+    pctWithClient: pct(withClient),
+    pctWithoutClient: pct(withoutClient),
+    pctOnProcess: pct(onProcess)
+  };
+}
+
+function buildReportText(){
+  const t = computeTotals();
+  const dateVal = document.getElementById('obhodDate').value || todayStr();
+  const [y,m,d] = dateVal.split('-');
+  const dateFormatted = d + '.' + m + '.' + y;
+
+  let lines = [];
+  lines.push('ОБХОД ДЕЖУРНОГО ДИРЕКТОРА');
+  lines.push(dateFormatted);
+  lines.push('');
+  departments.forEach(dep=>{
+    lines.push(dep.name + ': клиент ' + dep.withClient + ' / без клиента ' + dep.withoutClient + ' / процессы ' + dep.onProcess);
+  });
+  lines.push('');
+  lines.push('ИТОГО:');
+  lines.push('С клиентом: ' + t.withClient + ' (' + t.pctWithClient + '%)');
+  lines.push('Без клиента: ' + t.withoutClient + ' (' + t.pctWithoutClient + '%)');
+  lines.push('На процессах: ' + t.onProcess + ' (' + t.pctOnProcess + '%)');
+  return lines.join('\n');
+}
+
+function showResults(){
+  const t = computeTotals();
+  document.getElementById('resWithClient').innerHTML = t.withClient + '<span class="pct">' + t.pctWithClient + '%</span>';
+  document.getElementById('resWithoutClient').innerHTML = t.withoutClient + '<span class="pct">' + t.pctWithoutClient + '%</span>';
+  document.getElementById('resProcess').innerHTML = t.onProcess + '<span class="pct">' + t.pctOnProcess + '%</span>';
+  document.getElementById('resultsBlock').style.display = 'block';
+  document.getElementById('reportText').value = buildReportText();
+  document.getElementById('resultsBlock').scrollIntoView({ behavior:'smooth' });
+}
+
+function toggleReportText(){
+  const ta = document.getElementById('reportText');
+  ta.style.display = ta.style.display === 'block' ? 'none' : 'block';
+}
+
+function shareReport(){
+  const text = buildReportText();
+  if (navigator.share){
+    navigator.share({ text: text }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(()=>{
+      alert('Отчёт скопирован в буфер обмена — вставьте в чат вручную.');
+    });
+  }
+}
+
+function saveObhod(){
+  const status = document.getElementById('saveStatus');
+  const btn = document.getElementById('saveBtn');
+
+  if (WEBHOOK_URL.indexOf('ВСТАВЬТЕ') !== -1){
+    status.textContent = 'Не задан WEBHOOK_URL в коде страницы';
+    status.className = 'err';
+    return;
+  }
+
+  const payload = {
+    date: (function(){
+      const dateVal = document.getElementById('obhodDate').value || todayStr();
+      const [y,m,d] = dateVal.split('-');
+      return d + '.' + m + '.' + y;
+    })(),
+    departments: departments
+  };
+
+  document.getElementById('f_payload').value = JSON.stringify(payload);
+  const form = document.getElementById('hiddenForm');
+  form.action = WEBHOOK_URL;
+
+  btn.disabled = true;
+  status.textContent = 'Сохраняю…';
+  status.className = '';
+  form.submit();
+
+  setTimeout(()=>{
+    status.textContent = '✅ Обход сохранён в таблицу';
+    status.className = 'ok';
+    btn.disabled = false;
+    showResults();
+  }, 900);
+}
+
+document.getElementById('obhodDate').value = todayStr();
+renderDepts();
+</script>
+</body>
+</html>
